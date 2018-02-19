@@ -177,8 +177,8 @@ func main() {
 				}
 
 				// transfer data & remove host copy
-				// debug // fmt.Printf("scp " + fileNameStr + " meduser@192.168.2.5:/data/LITwheel/ \n")
-				cmd = exec.Command("cmd.exe", "/C", "scp "+fileNameStr+" meduser@192.168.2.5:/data/LITwheel/")
+				// debug // fmt.Printf("scp " + fileNameStr + " user@server:/targetdir \n")
+				cmd = exec.Command("cmd.exe", "/C", "scp "+fileNameStr+ "user@server:/targetdir" )
 
 				_, err = cmd.Output()
 				if err != nil {
