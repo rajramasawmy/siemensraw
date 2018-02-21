@@ -98,34 +98,65 @@ func main() {
 		b := strings.SplitAfterN(a, " ", 50)
 
 		c := "a"
-
 		RRflag := 0
 		e := 0
 		i := 0
+		xf := 0
 		fileID := "und" // undefined
 		FIDnum := "und"
 		fileNameStr := "und"
-		for e < 3 {
+		dateStr := "und"
+		timeStr := "und"
+
+		for e < 9 {
 
 			c = b[i]
+
 			c = strings.Replace(c, " ", "", -1)
 
 			if len(c) > 0 {
-				// debug // fmt.Println(c)
-
+				// d = unicode.IsNumber(rune(c[0]))
+				fmt.Println(c)
+				//		fmt.Println(IsLetter(string(c[0])))
 				e += 1
+
 				if e == 1 {
 					fileID = c
 				} else if e == 2 {
 					if len(c) > 5 { // retrorecon jobs have 7-digit FID's, no need to download these duplicates.
-						fmt.Println("file ID " + fileID + " : Retro-recon, no need to transfer") // debug //
+						fmt.Println("retrorecon")
 						RRflag = 1
 					} else {
 						FIDnum = "_FID" + strings.Repeat("0", 5-len(c)) + c
 					}
 				} else if e == 3 {
+					fmt.Println(c+" strcmp: %d", strings.Compare(c[0:3], "Adj"))
 					fileNameStr = c
+					// As dependencies are being copied, don't copy them! (* cannot use "Adj" as the initial part of a scan name)
+					if c[0:3] == "Adj" {
+						RRflag = 1 // borrowing retrorecon flag to not copy adjustment scans
+						fmt.Println("adj")
+					}
+				} else if e > 3 && e < 7 {
+					// sift through possible spaces in the filename. For simplicity, spaces are replaced with underscores.
+					if c != "xxxxxx" && xf == 0 {
+						e -= 1
+						fileNameStr = fileNameStr + "_" + c
+					} else if c == "xxxxxx" && xf == 0 {
+						xf = 1
+					}
+				} else if e == 8 {
+					// extract date in to YYYYMMDD format
+					date1 := c
+					dateStr = date1[6:10] + date1[3:5] + date1[0:2]
+
+				} else if e == 9 {
+					// extract creation time-stamp and remove colons for saving
+					time1 := c
+					timeStr = reg.ReplaceAllString(time1, "")
+
 				}
+
 			} else {
 			}
 			i += 1
@@ -177,8 +208,8 @@ func main() {
 				}
 
 				// transfer data & remove host copy
-				// debug // fmt.Printf("scp " + fileNameStr + " user@server:/targetdir \n")
-				cmd = exec.Command("cmd.exe", "/C", "scp "+fileNameStr+ "user@server:/targetdir" )
+				// debug // fmt.Printf("scp " + fileNameStr + " user@host:/folder/ \n")
+				cmd = exec.Command("cmd.exe", "/C", "scp "+fileNameStr+" user@host:/folder/")
 
 				_, err = cmd.Output()
 				if err != nil {
