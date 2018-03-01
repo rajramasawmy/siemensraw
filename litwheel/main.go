@@ -73,14 +73,14 @@ func main() {
 	r.Comma = '\t' // ? is this reduntant?
 
 	// loop through raidtool dump >>
-	 debug_tick := 0
+	 //debug_tick := 0
 	for {
 		// debug //		fmt.Println("Reading CSV") // debug //
-		debug_tick += 1
+/*		debug_tick += 1
 		if debug_tick > 10 {
 			break
 		} // limit how much of the RAID is processed for testing
-
+*/
 		record, err := r.Read()
 		if err == io.EOF {
 			break
