@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"regexp"
 	"os"
 	"os/exec"
 	"strconv"
@@ -70,15 +71,15 @@ func main() {
 	rt_body := rt_string[idx+len("(fileID)"):]
 	r := csv.NewReader(strings.NewReader(rt_body))
 	r.Comma = '\t' // ? is this reduntant?
+
 	// loop through raidtool dump >>
-	// debug_tick := 0
+	 debug_tick := 0
 	for {
 		// debug //		fmt.Println("Reading CSV") // debug //
-		/*debug_tick += 1
+		debug_tick += 1
 		if debug_tick > 10 {
 			break
 		} // limit how much of the RAID is processed for testing
-		*/
 
 		record, err := r.Read()
 		if err == io.EOF {
@@ -86,6 +87,10 @@ func main() {
 		}
 		if err != nil {
 			log.Fatal(err)
+		}
+		reg, err2 := regexp.Compile("[^0-9]+")
+		if err2 != nil {
+			log.Fatal(err2)
 		}
 
 		a := record[0]
@@ -95,7 +100,7 @@ func main() {
 		}
 
 		// determine filename & whether file is a retrorecon >>
-		b := strings.SplitAfterN(a, " ", 50)
+		b := strings.SplitAfterN(a, " ", 500) // empirical
 
 		c := "a"
 		RRflag := 0
@@ -108,16 +113,15 @@ func main() {
 		dateStr := "und"
 		timeStr := "und"
 
-		for e < 9 {
+		for e < 9 { // empirical
 
 			c = b[i]
 
 			c = strings.Replace(c, " ", "", -1)
 
-			if len(c) > 0 {
-				// d = unicode.IsNumber(rune(c[0]))
-				fmt.Println(c)
-				//		fmt.Println(IsLetter(string(c[0])))
+			if len(c) > 0 { // find text
+
+				// debug // fmt.Println(c)
 				e += 1
 
 				if e == 1 {
@@ -130,12 +134,12 @@ func main() {
 						FIDnum = "_FID" + strings.Repeat("0", 5-len(c)) + c
 					}
 				} else if e == 3 {
-					fmt.Println(c+" strcmp: %d", strings.Compare(c[0:3], "Adj"))
 					fileNameStr = c
-					// As dependencies are being copied, don't copy them! (* cannot use "Adj" as the initial part of a scan name)
-					if c[0:3] == "Adj" {
-						RRflag = 1 // borrowing retrorecon flag to not copy adjustment scans
-						fmt.Println("adj")
+					if len(c) > 2 {
+						if c[0:3] == "Adj" {
+							RRflag = 1 // borrowing retrorecon flag to not copy adjustment scans
+							fmt.Println("adj")
+						}
 					}
 				} else if e > 3 && e < 7 {
 					// sift through possible spaces in the filename. For simplicity, spaces are replaced with underscores.
@@ -154,17 +158,15 @@ func main() {
 					// extract creation time-stamp and remove colons for saving
 					time1 := c
 					timeStr = reg.ReplaceAllString(time1, "")
-
 				}
-
 			} else {
 			}
 			i += 1
 		}
 
 		// target format: meas_MID00000_FID00000_NAME.dat
-		fileNameStr = "meas_" + "MID" + strings.Repeat("0", 5-len(fileID)) + fileID + FIDnum + "_" + fileNameStr + ".dat"
-		// determine filename <<
+		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + strings.Repeat("0", 5-len(fileID)) + fileID + FIDnum + "_" + fileNameStr + ".dat"
+	// determine filename <<
 
 		if RRflag == 0 {
 			// Suitable for transfer - now check if hash exists locally >>
