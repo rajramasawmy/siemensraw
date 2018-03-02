@@ -108,7 +108,7 @@ func main() {
 		i := 0
 		xf := 0
 		fileID := "und" // undefined
-		FIDnum := "und"
+		MeasID := "und"
 		fileNameStr := "und"
 		dateStr := "und"
 		timeStr := "und"
@@ -131,7 +131,7 @@ func main() {
 						fmt.Println("retrorecon")
 						RRflag = 1
 					} else {
-						FIDnum = "_FID" + strings.Repeat("0", 5-len(c)) + c
+						MeasID = strings.Repeat("0", 5-len(c)) + c
 					}
 				} else if e == 3 {
 					fileNameStr = c
@@ -165,7 +165,7 @@ func main() {
 		}
 
 		// target format: meas_MID00000_FID00000_NAME.dat
-		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + strings.Repeat("0", 5-len(fileID)) + fileID + FIDnum + "_" + fileNameStr + ".dat"
+		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + MeasID + "_FID" + strings.Repeat("0", 5-len(fileID)) + fileID + "_" + fileNameStr + ".dat"
 	// determine filename <<
 
 		if RRflag == 0 {
