@@ -1,12 +1,11 @@
 package main
 
-// this is a change
-// this is a second change
 
 // not highly efficient method to parse raidtool information
 // creates raidtooltmp.txt, raidtool.txt files in the local directory
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,12 +20,20 @@ import (
 
 func main() {
 
+  // read text file from raidtool dump
+	raidfilePtr := flag.String("file", "raidtool.txt", "a raidfile txt")
+	flag.Parse()
+	//fmt.Println("raidfile text:", *raidfilePtr)
+
 	// load raidtool dump >>
 	// debug //	fmt.Println("Raidtool read") // debug //
-	rtFile, err2 := ioutil.ReadFile("tmp2.txt")
+	rtFile, err2 := ioutil.ReadFile(*raidfilePtr)
 	if err2 != nil {
 		log.Fatal(err2)
 	}
+
+
+
 	// load raidtool dump <<
 
 	// raidtool header print >>
@@ -45,11 +52,11 @@ func main() {
 	r := csv.NewReader(strings.NewReader(rt_body))
 	r.Comma = '\t'
 	// loop through raidtool dump >>
-	//debug_tick := 0
+	debug_tick := 0
 	for {
 		fmt.Printf("**************\n")
 		// debug //		fmt.Println("Reading CSV") // debug //
-		/*debug_tick += 1
+		debug_tick += 1
 		if debug_tick > 5 {
 			break
 		} // limit how much of the RAID is processed for testing */
