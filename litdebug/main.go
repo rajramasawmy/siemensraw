@@ -162,12 +162,12 @@ func main() {
 		}
 
 		//	fileID := reg.ReplaceAllString(a[0:10], "") // [0:10]-12 is affected by retrorecon, 8 is still safe with len(FILEID)=4
-		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + MeasID + "_FID" + strings.Repeat("0", 5-len(fileID)) + fileID + "_" + fileNameStr + ".dat"
+		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + MeasID + "_FID" + strings.Repeat("0", 5-len(fileID)) + fileID + "_" + fileNameStr + ".dat" // get for list making purposes
 		//	fmt.Println("FILE ID: " + fileID) // debug //
 
 		if RRflag == 0 {
 			fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 \n")
-			fmt.Printf("scp " + fileNameStr + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr) //change to inputs for target address and key
+			fmt.Printf("scp " + fileNameStr + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
 			fmt.Printf("rm " + fileNameStr + " \n")
 			// target format: meas_MID00000_FID00000_NAME.dat
 		}
