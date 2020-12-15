@@ -22,8 +22,17 @@ func main() {
 
   // read text file from raidtool dump
 	raidfilePtr := flag.String("file", "raidtool.txt", "a raidfile txt")
+	userkeyPtr := flag.String("key", "tempkey", "user ssh key")
+	usernamePtr := flag.String("user", "meduser", "username")
+	storageaddressPtr := flag.String("address", "192.168.2.5:/data/LITwheel/", "storage destination address")
 	flag.Parse()
-	//fmt.Println("raidfile text:", *raidfilePtr)
+	// fmt.Println("raidfile text:", *raidfilePtr)
+	fmt.Println("user key text file:", *userkeyPtr)
+	fmt.Println("user:", *usernamePtr)
+	fmt.Println("storage destination:", *storageaddressPtr)
+
+
+
 
 	// load raidtool dump >>
 	// debug //	fmt.Println("Raidtool read") // debug //
@@ -158,7 +167,7 @@ func main() {
 
 		if RRflag == 0 {
 			fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 \n")
-			fmt.Printf("scp " + fileNameStr + " meduser@192.168.2.5:/data/LITwheel/ \n")
+			fmt.Printf("scp " + fileNameStr + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr) //change to inputs for target address and key
 			fmt.Printf("rm " + fileNameStr + " \n")
 			// target format: meas_MID00000_FID00000_NAME.dat
 		}
