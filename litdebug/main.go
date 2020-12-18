@@ -25,11 +25,13 @@ func main() {
 	userkeyPtr := flag.String("key", "tempkey", "user ssh key")
 	usernamePtr := flag.String("user", "meduser", "username")
 	storageaddressPtr := flag.String("address", "192.168.2.5:/data/LITwheel/", "storage destination address")
+	debugTickPtr := flag.Int("debug", 0, "number of debug ticks")
 	flag.Parse()
 	// fmt.Println("raidfile text:", *raidfilePtr)
-	fmt.Println("user key text file:", *userkeyPtr)
-	fmt.Println("user:", *usernamePtr)
-	fmt.Println("storage destination:", *storageaddressPtr)
+	// fmt.Println("user key text file:", *userkeyPtr)
+	// fmt.Println("user:", *usernamePtr)
+	// fmt.Println("storage destination:", *storageaddressPtr)
+	// fmt.Println("ticks:", *debugTickPtr)
 
 
 
@@ -65,10 +67,13 @@ func main() {
 	for {
 		fmt.Printf("**************\n")
 		// debug //		fmt.Println("Reading CSV") // debug //
-		debug_tick += 1
-		if debug_tick > 5 {
+		if debug_tick >= *debugTickPtr {
 			break
 		} // limit how much of the RAID is processed for testing */
+
+		if *debugTickPtr != 0 {
+			debug_tick += 1
+		}
 
 		record, err := r.Read()
 		if err == io.EOF {
