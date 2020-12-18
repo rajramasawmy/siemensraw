@@ -30,9 +30,14 @@ func main() {
 	// fmt.Println("raidfile text:", *raidfilePtr)
 	// fmt.Println("user key text file:", *userkeyPtr)
 	// fmt.Println("user:", *usernamePtr)
+<<<<<<< HEAD
 	// fmt.Println("storage destination:", *storageaddressPtr)
 
 	fmt.Println("ticks:", *debugTickPtr)
+=======
+
+	// fmt.Println("ticks:", *debugTickPtr)
+>>>>>>> 47b16e829ca6e21b01d6ad02ad5dbea28ecf571c
 
 
 
@@ -69,8 +74,13 @@ func main() {
 	for {
 		fmt.Printf("**************\n")
 		// debug //		fmt.Println("Reading CSV") // debug //
+<<<<<<< HEAD
 
 		if debug_tick >= *debugTickPtr {
+=======
+    
+		if debug_tick > *debugTickPtr {
+>>>>>>> 47b16e829ca6e21b01d6ad02ad5dbea28ecf571c
 			break
 		} // limit how much of the RAID is processed for testing */
 
