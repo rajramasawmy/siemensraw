@@ -30,14 +30,8 @@ func main() {
 	// fmt.Println("raidfile text:", *raidfilePtr)
 	// fmt.Println("user key text file:", *userkeyPtr)
 	// fmt.Println("user:", *usernamePtr)
-<<<<<<< HEAD
-	// fmt.Println("storage destination:", *storageaddressPtr)
-
-	fmt.Println("ticks:", *debugTickPtr)
-=======
 
 	// fmt.Println("ticks:", *debugTickPtr)
->>>>>>> 47b16e829ca6e21b01d6ad02ad5dbea28ecf571c
 
 
 
@@ -74,13 +68,8 @@ func main() {
 	for {
 		fmt.Printf("**************\n")
 		// debug //		fmt.Println("Reading CSV") // debug //
-<<<<<<< HEAD
 
-		if debug_tick >= *debugTickPtr {
-=======
-    
 		if debug_tick > *debugTickPtr {
->>>>>>> 47b16e829ca6e21b01d6ad02ad5dbea28ecf571c
 			break
 		} // limit how much of the RAID is processed for testing */
 
@@ -112,7 +101,7 @@ func main() {
 		c := "a"
 		RRflag := 0
 		e := 0
-		i := 0
+		iter := 0
 		xf := 0
 		fileID := "und" // undefined
 		MeasID := "und"
@@ -122,7 +111,7 @@ func main() {
 
 		for e < 9 {
 
-			c = b[i]
+			c = b[iter]
 
 			c = strings.Replace(c, " ", "", -1)
 
@@ -176,7 +165,7 @@ func main() {
 
 			} else {
 			}
-			i += 1
+			iter += 1
 		}
 
 		//	fileID := reg.ReplaceAllString(a[0:10], "") // [0:10]-12 is affected by retrorecon, 8 is still safe with len(FILEID)=4
