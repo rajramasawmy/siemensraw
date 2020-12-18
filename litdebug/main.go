@@ -31,7 +31,11 @@ func main() {
 	// fmt.Println("user key text file:", *userkeyPtr)
 	// fmt.Println("user:", *usernamePtr)
 	// fmt.Println("storage destination:", *storageaddressPtr)
+<<<<<<< HEAD
 	fmt.Println("ticks:", *debugTickPtr)
+=======
+	// fmt.Println("ticks:", *debugTickPtr)
+>>>>>>> cli_flags
 
 
 
@@ -67,10 +71,18 @@ func main() {
 	for {
 		fmt.Printf("**************\n")
 		// debug //		fmt.Println("Reading CSV") // debug //
+<<<<<<< HEAD
 		debug_tick += 1
 		if debug_tick > *debugTickPtr {
+=======
+		if debug_tick >= *debugTickPtr {
+>>>>>>> cli_flags
 			break
 		} // limit how much of the RAID is processed for testing */
+
+		if *debugTickPtr != 0 {
+			debug_tick += 1
+		}
 
 		record, err := r.Read()
 		if err == io.EOF {
