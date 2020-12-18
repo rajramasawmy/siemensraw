@@ -67,7 +67,7 @@ func main() {
 	for {
 		fmt.Printf("**************\n")
 		// debug //		fmt.Println("Reading CSV") // debug //
-		if debug_tick >= *debugTickPtr {
+		if debug_tick > *debugTickPtr {
 			break
 		} // limit how much of the RAID is processed for testing */
 
