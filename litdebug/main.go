@@ -32,7 +32,11 @@ func main() {
 	// fmt.Println("user:", *usernamePtr)
 	// fmt.Println("storage destination:", *storageaddressPtr)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	fmt.Println("ticks:", *debugTickPtr)
+=======
+	// fmt.Println("ticks:", *debugTickPtr)
+>>>>>>> cli_flags
 =======
 	// fmt.Println("ticks:", *debugTickPtr)
 >>>>>>> cli_flags
@@ -72,8 +76,12 @@ func main() {
 		fmt.Printf("**************\n")
 		// debug //		fmt.Println("Reading CSV") // debug //
 <<<<<<< HEAD
+<<<<<<< HEAD
 		debug_tick += 1
 		if debug_tick > *debugTickPtr {
+=======
+		if debug_tick >= *debugTickPtr {
+>>>>>>> cli_flags
 =======
 		if debug_tick >= *debugTickPtr {
 >>>>>>> cli_flags
