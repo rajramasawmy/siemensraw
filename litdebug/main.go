@@ -30,14 +30,10 @@ func main() {
 	// fmt.Println("raidfile text:", *raidfilePtr)
 	// fmt.Println("user key text file:", *userkeyPtr)
 	// fmt.Println("user:", *usernamePtr)
-<<<<<<< HEAD
-	// fmt.Println("storage destination:", *storageaddressPtr)
 
-	fmt.Println("ticks:", *debugTickPtr)
-=======
 
 	// fmt.Println("ticks:", *debugTickPtr)
->>>>>>> 47b16e829ca6e21b01d6ad02ad5dbea28ecf571c
+
 
 
 
@@ -70,19 +66,24 @@ func main() {
 	r := csv.NewReader(strings.NewReader(rt_body))
 	r.Comma = '\t'
 	// loop through raidtool dump >>
-	debug_tick := 0
+
+	if *debugTickPtr !=0 {
+		fmt.Printf("Limited operation is in effect. Will run %d loops.\n", *debugTickPtr)
+	}
+
+	raidLoopCounter := 0
 	for {
 		fmt.Printf("**************\n")
 		// debug //		fmt.Println("Reading CSV") // debug //
 
 
-		if debug_tick > *debugTickPtr {
+		if raidLoopCounter + 1 > *debugTickPtr {
 
 			break
 		} // limit how much of the RAID is processed for testing */
 
 		if *debugTickPtr != 0 {
-			debug_tick += 1
+			raidLoopCounter += 1
 		}
 
 		record, err := r.Read()
@@ -98,16 +99,22 @@ func main() {
 			log.Fatal(err2)
 		}
 
-		a := record[0]
-		// debug //		fmt.Println(a) // debug //
+		newRaidLine := record[0]
+		// debug // fmt.Println("New line read") // fmt.Println(newRaidLine + "\n++++++++++++++\n") // debug //
 		if len(record[0]) < 100 { // end of file catch
 			break
 		}
+// debug //
+		fmt.Println("New line read") //
+		 // debug //
+		newRaidLineSplit := strings.SplitAfterN(newRaidLine, " ", 500)
+		// b100 := strings.SplitAfterN(newRaidLine, " ", 100)
+		// b300 := strings.SplitAfterN(newRaidLine, " ", 300)
 
-		b := strings.SplitAfterN(a, " ", 500)
+		fmt.Println(newRaidLineSplit)
 
-		c := "a"
-		RRflag := 0
+		c := "tmpstr"
+		isNotToBeCopied := 0
 		e := 0
 		i := 0
 		xf := 0
@@ -119,7 +126,9 @@ func main() {
 
 		for e < 9 {
 
-			c = b[i]
+			fmt.Printf(c)
+
+			c = newRaidLineSplit[i]
 
 			c = strings.Replace(c, " ", "", -1)
 
@@ -134,7 +143,7 @@ func main() {
 				} else if e == 2 {
 					if len(c) > 5 { // retrorecon jobs have 7-digit FID's, no need to download these duplicates.
 						fmt.Println("retrorecon")
-						RRflag = 1
+						isNotToBeCopied = 1
 					} else {
 						MeasID = strings.Repeat("0", 5-len(c)) + c
 					}
@@ -144,7 +153,7 @@ func main() {
 						//fmt.Println(c+" strcmp: %d", strings.Compare(c[0:3], "Adj"))
 
 						if c[0:3] == "Adj" {
-							RRflag = 1 // borrowing retrorecon flag to not copy adjustment scans
+							isNotToBeCopied = 1 // borrowing retrorecon flag to not copy adjustment scans
 							fmt.Println("adj")
 						}
 					}
@@ -176,17 +185,31 @@ func main() {
 			i += 1
 		}
 
-		//	fileID := reg.ReplaceAllString(a[0:10], "") // [0:10]-12 is affected by retrorecon, 8 is still safe with len(FILEID)=4
+		// stash everything into arrays (fileID, measID, ...)
+
+
+
+
+		//	fileID := reg.ReplaceAllString(newRaidLine[0:10], "") // [0:10]-12 is affected by retrorecon, 8 is still safe with len(FILEID)=4
 		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + MeasID + "_FID" + strings.Repeat("0", 5-len(fileID)) + fileID + "_" + fileNameStr + ".dat" // get for list making purposes
 		//	fmt.Println("FILE ID: " + fileID) // debug //
 
-		if RRflag == 0 {
+
+
+	} // loop through raidtool dump << (raidLoop end)
+
+	// number of files = raidLoopCounter //name this var
+
+	// start loop for len(raidLoopCounter)
+	for i < raidLoopCounter {
+		index = number of files - i //change this var name
+		if isNotToBeCopiedArray[index] == 0 {
 			fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 \n")
 			fmt.Printf("scp " + fileNameStr + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
 			fmt.Printf("rm " + fileNameStr + " \n")
 			// target format: meas_MID00000_FID00000_NAME.dat
 		}
+	}
 
-	} // loop through raidtool dump <<
 
 }
