@@ -13,12 +13,19 @@ import (
 	//	"os"
 	//	"os/exec"
 	"regexp"
-	"strconv"
+	// "strconv"
 	"strings"
 	// "unicode"
 )
 
 func main() {
+
+	fmt.Println("^^^^^^^^^^^^^^^^^^^\nSTART OF FUNCTION")
+
+
+	// *********************************************************************
+	// PARSE COMMAND LINE INPUTS
+	// *********************************************************************
 
   // read text file from raidtool dump
 	raidfilePtr := flag.String("file", "raidtool.txt", "a raidfile txt")
@@ -27,12 +34,12 @@ func main() {
 	storageaddressPtr := flag.String("address", "192.168.2.5:/data/LITwheel/", "storage destination address")
 	debugTickPtr := flag.Int("debug", 0, "number of debug ticks")
 	flag.Parse()
-	// fmt.Println("raidfile text:", *raidfilePtr)
-	// fmt.Println("user key text file:", *userkeyPtr)
-	// fmt.Println("user:", *usernamePtr)
 
-
-	// fmt.Println("ticks:", *debugTickPtr)
+	// CLEAN UP USER PARAMETERS
+	fmt.Println("raidfile text:", *raidfilePtr)
+	fmt.Println("user key text file:", *userkeyPtr)
+	fmt.Println("user:", *usernamePtr)
+	fmt.Println("ticks:", *debugTickPtr)
 
 
 
@@ -50,14 +57,18 @@ func main() {
 
 	// load raidtool dump <<
 
-	// raidtool header print >>
+	// *********************************************************************
+	// PRINT RAIDTOOL HEADER
+	// *********************************************************************
+
+
 	rt_string := string(rtFile[:])
 	idx := strings.Index(rt_string, "FileID")
 	rt_head := rt_string[:idx]
-	headSlice := strings.Split(rt_head, " ")
-	numFiles, _ := strconv.Atoi(headSlice[35]) // empirically consistent
-	fileIDs := make([]string, numFiles+20)     // padding to avoid 'panic'
-	fmt.Println("fileID size", len(fileIDs), "rt_head: \n", rt_head)
+	// headSlice := strings.Split(rt_head, " ")
+	// numFiles, _ := strconv.Atoi(headSlice[35]) // empirically consistent
+	// fileIDs := make([]string, numFiles+20)     // padding to avoid 'panic'
+	fmt.Println("^^^^^^^^^^^^^^^^^^^\nSTART OF HEADER", rt_head)
 	// raidtool header print <<
 
 	// Attempt to find measurement IDs using csv (tab delimiting doesn't quite work)
@@ -70,6 +81,14 @@ func main() {
 	if *debugTickPtr !=0 {
 		fmt.Printf("Limited operation is in effect. Will run %d loops.\n", *debugTickPtr)
 	}
+
+// *********************************************************************
+// THIS IS THE START OF THE FIRST LOOP (CREATING isNotToBeCopiedArray)
+// *********************************************************************
+
+	// isNotToBeCopiedArray := []    // figure out how to initialize this stuff (arrays)
+	// fileNameStrArray := []
+	// fileID := []
 
 	raidLoopCounter := 0
 	for {
@@ -105,19 +124,15 @@ func main() {
 			break
 		}
 // debug //
-		fmt.Println("New line read") //
+		// fmt.Println("New line read") //
 		 // debug //
 		newRaidLineSplit := strings.SplitAfterN(newRaidLine, " ", 500)
-		// b100 := strings.SplitAfterN(newRaidLine, " ", 100)
-		// b300 := strings.SplitAfterN(newRaidLine, " ", 300)
-
-		fmt.Println(newRaidLineSplit)
 
 		c := "tmpstr"
 		isNotToBeCopied := 0
 		e := 0
 		i := 0
-		xf := 0
+		protNameFlag := 0
 		fileID := "und" // undefined
 		MeasID := "und"
 		fileNameStr := "und"
@@ -126,15 +141,17 @@ func main() {
 
 		for e < 9 {
 
-			fmt.Printf(c)
+
 
 			c = newRaidLineSplit[i]
+			// fmt.Printf(c + "\n")
 
 			c = strings.Replace(c, " ", "", -1)
 
 			if len(c) > 0 {
 				// d = unicode.IsNumber(rune(c[0]))
-				fmt.Println(c)
+				// fmt.Println(">>" +c)
+
 				//		fmt.Println(IsLetter(string(c[0])))
 				e += 1
 
@@ -158,11 +175,13 @@ func main() {
 						}
 					}
 				} else if e > 3 && e < 7 { // sift through possible spaces in the filename
-					if c != "xxxxxx" && xf == 0 {
+
+					// currently, xxxxxx for PatName when using anonymized raid
+					if c != "xxxxxx" && protNameFlag == 0 {
 						e -= 1
 						fileNameStr = fileNameStr + "_" + c
-					} else if c == "xxxxxx" && xf == 0 {
-						xf = 1
+					} else if c == "xxxxxx" && protNameFlag == 0 {
+					  protNameFlag = 1
 					}
 				} else if e == 8 {
 					//fmt.Println(c)
@@ -186,6 +205,7 @@ func main() {
 		}
 
 		// stash everything into arrays (fileID, measID, ...)
+		_=isNotToBeCopied //comment this out, and put stuff here
 
 
 
@@ -193,23 +213,32 @@ func main() {
 		//	fileID := reg.ReplaceAllString(newRaidLine[0:10], "") // [0:10]-12 is affected by retrorecon, 8 is still safe with len(FILEID)=4
 		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + MeasID + "_FID" + strings.Repeat("0", 5-len(fileID)) + fileID + "_" + fileNameStr + ".dat" // get for list making purposes
 		//	fmt.Println("FILE ID: " + fileID) // debug //
+		fmt.Println(fileNameStr)
 
 
 
-	} // loop through raidtool dump << (raidLoop end)
+	} 	// loop through raidtool dump << (raidLoop end)
 
-	// number of files = raidLoopCounter //name this var
+	// *********************************************************************
+	// THIS IS THE START OF THE SECOND LOOP (COPYING DATA BASED ON isNotToBeCopiedArray)
+	// *********************************************************************
+
+
+
+
 
 	// start loop for len(raidLoopCounter)
-	for i < raidLoopCounter {
-		index = number of files - i //change this var name
-		if isNotToBeCopiedArray[index] == 0 {
-			fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 \n")
+
+	// for i < raidLoopCounter {
+	// 	index = raidLoopCounter - i // number of files = raidLoopCounter
+	// 	if isNotToBeCopiedArray[index] == 0 {  // isNotToBeCopiedArray = all isNotToBeCopied's
+	// 		fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 \n")
+	fileNameStr := ""
 			fmt.Printf("scp " + fileNameStr + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
-			fmt.Printf("rm " + fileNameStr + " \n")
-			// target format: meas_MID00000_FID00000_NAME.dat
-		}
-	}
+	// 		fmt.Printf("rm " + fileNameStr + " \n")
+	// 		// target format: meas_MID00000_FID00000_NAME.dat
+	// 	}
+	// }
 
 
 }
