@@ -82,13 +82,14 @@ func main() {
 		fmt.Printf("Limited operation is in effect. Will run %d loops.\n", *debugTickPtr)
 	}
 
+
 // *********************************************************************
-// THIS IS THE START OF THE FIRST LOOP (CREATING isNotToBeCopiedArray)
+// THE START OF THE FIRST LOOP (CREATING isNotToBeCopiedArray)
 // *********************************************************************
 
-	// isNotToBeCopiedArray := []    // figure out how to initialize this stuff (arrays)
-	// fileNameStrArray := []
-	// fileID := []
+	isNotToBeCopiedArray := make([]int, 0)    // figure out how to initialize this stuff (arrays)
+	fileNameStrArray := make([]string, 0)
+	fileIDArray := make([]string, 0)
 
 	raidLoopCounter := 0
 	for {
@@ -96,19 +97,20 @@ func main() {
 		// debug //		fmt.Println("Reading CSV") // debug //
 
 
-		if raidLoopCounter + 1 > *debugTickPtr {
+		if (raidLoopCounter + 1 > *debugTickPtr) && (*debugTickPtr > 0) {
 
 			break
 		} // limit how much of the RAID is processed for testing */
 
-		if *debugTickPtr != 0 {
-			raidLoopCounter += 1
-		}
+
+
+
 
 		record, err := r.Read()
 		if err == io.EOF {
 			break
 		}
+
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -117,6 +119,8 @@ func main() {
 		if err2 != nil {
 			log.Fatal(err2)
 		}
+
+		raidLoopCounter += 1
 
 		newRaidLine := record[0]
 		// debug // fmt.Println("New line read") // fmt.Println(newRaidLine + "\n++++++++++++++\n") // debug //
@@ -128,10 +132,12 @@ func main() {
 		 // debug //
 		newRaidLineSplit := strings.SplitAfterN(newRaidLine, " ", 500)
 
-		c := "tmpstr"
+		elementStr := "tmpstr"
 		isNotToBeCopied := 0
-		e := 0
+		elementNumber := 0
 		i := 0
+
+		// index := 0
 		protNameFlag := 0
 		fileID := "und" // undefined
 		MeasID := "und"
@@ -139,62 +145,64 @@ func main() {
 		dateStr := "und"
 		timeStr := "und"
 
-		for e < 9 {
+
+
+		for elementNumber < 9 {
 
 
 
-			c = newRaidLineSplit[i]
-			// fmt.Printf(c + "\n")
+			elementStr = newRaidLineSplit[i]
+			// fmt.Printf(elementStr + "\n")
 
-			c = strings.Replace(c, " ", "", -1)
+			elementStr = strings.Replace(elementStr, " ", "", -1)
 
-			if len(c) > 0 {
-				// d = unicode.IsNumber(rune(c[0]))
-				// fmt.Println(">>" +c)
+			if len(elementStr) > 0 {
+				// d = unicode.IsNumber(rune(elementStr[0]))
+				// fmt.Println(">>" +elementStr)
 
-				//		fmt.Println(IsLetter(string(c[0])))
-				e += 1
+				//		fmt.Println(IsLetter(string(elementStr[0])))
+				elementNumber += 1
 
-				if e == 1 {
-					fileID = c
-				} else if e == 2 {
-					if len(c) > 5 { // retrorecon jobs have 7-digit FID's, no need to download these duplicates.
+				if elementNumber == 1 {
+					fileID = elementStr
+				} else if elementNumber == 2 {
+					if len(elementStr) > 5 { // retrorecon jobs have 7-digit FID's, no need to download these duplicates.
 						fmt.Println("retrorecon")
 						isNotToBeCopied = 1
 					} else {
-						MeasID = strings.Repeat("0", 5-len(c)) + c
+						MeasID = strings.Repeat("0", 5-len(elementStr)) + elementStr
 					}
-				} else if e == 3 { // this should be tidied
-					fileNameStr = c
-					if len(c) > 2 {
-						//fmt.Println(c+" strcmp: %d", strings.Compare(c[0:3], "Adj"))
+				} else if elementNumber == 3 { // this should be tidied
+					fileNameStr = elementStr
+					if len(elementStr) > 2 {
+						//fmt.Println(elementStr+" strcmp: %d", strings.Compare(elementStr[0:3], "Adj"))
 
-						if c[0:3] == "Adj" {
+						if elementStr[0:3] == "Adj" {
 							isNotToBeCopied = 1 // borrowing retrorecon flag to not copy adjustment scans
 							fmt.Println("adj")
 						}
 					}
-				} else if e > 3 && e < 7 { // sift through possible spaces in the filename
+				} else if elementNumber > 3 && elementNumber < 7 { // sift through possible spaces in the filename
 
 					// currently, xxxxxx for PatName when using anonymized raid
-					if c != "xxxxxx" && protNameFlag == 0 {
-						e -= 1
-						fileNameStr = fileNameStr + "_" + c
-					} else if c == "xxxxxx" && protNameFlag == 0 {
+					if elementStr != "xxxxxx" && protNameFlag == 0 {
+						elementNumber -= 1
+						fileNameStr = fileNameStr + "_" + elementStr
+					} else if elementStr == "xxxxxx" && protNameFlag == 0 {
 					  protNameFlag = 1
 					}
-				} else if e == 8 {
-					//fmt.Println(c)
-					date1 := c
+				} else if elementNumber == 8 {
+					//fmt.Println(elementStr)
+					date1 := elementStr
 					dateStr = date1[6:10] + date1[3:5] + date1[0:2]
 					//fmt.Println("This is the date str: " + dateStr)
 					/*fmt.Println(date1[6:10])
 					fmt.Println(date1[3:5])
 					fmt.Println(date1[0:2])
 					fmt.Println(len(date1)) */
-				} else if e == 9 {
-					//fmt.Println(c)
-					time1 := c
+				} else if elementNumber == 9 {
+					//fmt.Println(elementStr)
+					time1 := elementStr
 					timeStr = reg.ReplaceAllString(time1, "")
 					//			fmt.Println("This is the time str: " + timeStr)
 				}
@@ -205,22 +213,23 @@ func main() {
 		}
 
 		// stash everything into arrays (fileID, measID, ...)
-		_=isNotToBeCopied //comment this out, and put stuff here
 
-
+		isNotToBeCopiedArray=append(isNotToBeCopiedArray, isNotToBeCopied)
+		fileIDArray=append(fileIDArray,fileID)
+		// measIDArray=append(measIDArray,MeasID)
 
 
 		//	fileID := reg.ReplaceAllString(newRaidLine[0:10], "") // [0:10]-12 is affected by retrorecon, 8 is still safe with len(FILEID)=4
 		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + MeasID + "_FID" + strings.Repeat("0", 5-len(fileID)) + fileID + "_" + fileNameStr + ".dat" // get for list making purposes
 		//	fmt.Println("FILE ID: " + fileID) // debug //
 		fmt.Println(fileNameStr)
-
+		fileNameStrArray=append(fileNameStrArray, fileNameStr)
 
 
 	} 	// loop through raidtool dump << (raidLoop end)
 
 	// *********************************************************************
-	// THIS IS THE START OF THE SECOND LOOP (COPYING DATA BASED ON isNotToBeCopiedArray)
+	// THE START OF THE SECOND LOOP (COPYING DATA BASED ON isNotToBeCopiedArray)
 	// *********************************************************************
 
 
@@ -229,16 +238,18 @@ func main() {
 
 	// start loop for len(raidLoopCounter)
 
-	// for i < raidLoopCounter {
-	// 	index = raidLoopCounter - i // number of files = raidLoopCounter
-	// 	if isNotToBeCopiedArray[index] == 0 {  // isNotToBeCopiedArray = all isNotToBeCopied's
-	// 		fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 \n")
-	fileNameStr := ""
-			fmt.Printf("scp " + fileNameStr + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
-	// 		fmt.Printf("rm " + fileNameStr + " \n")
-	// 		// target format: meas_MID00000_FID00000_NAME.dat
-	// 	}
-	// }
+
+
+	for j := 0; j < raidLoopCounter; j++ {
+		index := raidLoopCounter - j - 1 // number of files = raidLoopCounter
+
+		if isNotToBeCopiedArray[index] == 0 {  // isNotToBeCopiedArray = all isNotToBeCopied's
+			fmt.Printf("raidtool -m " + fileIDArray[index] + " -o " + fileNameStrArray[index] + " -a mars -p 8010 \n")
+			fmt.Printf("scp " + fileNameStrArray[index] + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
+			fmt.Printf("rm " + fileNameStrArray[index] + " \n")
+			// target format: meas_MID00000_FID00000_NAME.dat
+		}
+	}
 
 
 }
