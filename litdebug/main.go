@@ -140,7 +140,7 @@ func main() {
 
 		// index := 0
 		protNameFlag := 0
-    
+
 		fileID := "und" // undefined
 		MeasID := "und"
 		fileNameStr := "und"
@@ -212,7 +212,7 @@ func main() {
 
 			} else {
 			}
-			iter += 1
+			i += 1
 		}
 
 		// stash everything into arrays (fileID, measID, ...)
