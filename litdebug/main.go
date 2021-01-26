@@ -35,11 +35,11 @@ func main() {
 	debugTickPtr := flag.Int("debug", 0, "number of debug ticks")
 	flag.Parse()
 
-	// CLEAN UP USER PARAMETERS
-	fmt.Println("raidfile text:", *raidfilePtr)
-	fmt.Println("user key text file:", *userkeyPtr)
-	fmt.Println("user:", *usernamePtr)
-	fmt.Println("ticks:", *debugTickPtr)
+	// fmt.Println("raidfile text:", *raidfilePtr)
+	// fmt.Println("user key text file:", *userkeyPtr)
+	// fmt.Println("user:", *usernamePtr)
+
+	// fmt.Println("ticks:", *debugTickPtr)
 
 
 
@@ -127,6 +127,7 @@ func main() {
 		if len(record[0]) < 100 { // end of file catch
 			break
 		}
+
 // debug //
 		// fmt.Println("New line read") //
 		 // debug //
@@ -139,11 +140,13 @@ func main() {
 
 		// index := 0
 		protNameFlag := 0
+    
 		fileID := "und" // undefined
 		MeasID := "und"
 		fileNameStr := "und"
 		dateStr := "und"
 		timeStr := "und"
+
 
 
 
@@ -209,7 +212,7 @@ func main() {
 
 			} else {
 			}
-			i += 1
+			iter += 1
 		}
 
 		// stash everything into arrays (fileID, measID, ...)
