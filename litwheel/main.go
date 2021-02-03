@@ -23,7 +23,7 @@ func main() {
 	// *********************************************************************
 	if len(os.Args) < 5 {
 		fmt.Println("\n ================== \n LITwheel \n ================= \n\n"+
-			"Description: \n A program to run TWIX backups. \n\n"
+			"Description: \n A program to run TWIX backups. \n\n" +
 			"Usage: \n litwheel -hashlog=HASHFILE.txt -key=SSH_KEY -user=USER -address=IP_ADDRESS:/PATH -debug=LOOP_NUMBER(default 0)  \n" +
 			"\nREQUIRED: \n" +
 			" HASHFILE.txt - can be an existing list of hashes, or this tool will create a new file with the given name. \n" +
@@ -252,16 +252,16 @@ func main() {
 
 	for j := 0; j < raidLoopCounter; j++ {
 		// debug //
-		fmt.Printf("***************\n")
+		// fmt.Printf("***************\n")
 
 		// Reverse step through twix to copy oldest data first
 		index := raidLoopCounter - j - 1 // number of files = raidLoopCounter
 
 		if isNotToBeCopiedArray[index] == 0 {  // isNotToBeCopiedArray = all isNotToBeCopied's
-			// debug //
-			fmt.Printf("raidtool -m " + fileIDArray[index] + " -o " + fileNameStrArray[index] + " -a mars -p 8010 \n")
-			fmt.Printf("scp " + fileNameStrArray[index] + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
-			fmt.Printf("rm " + fileNameStrArray[index] + " \n")
+			// // debug //
+			// fmt.Printf("raidtool -m " + fileIDArray[index] + " -o " + fileNameStrArray[index] + " -a mars -p 8010 \n")
+			// fmt.Printf("scp -i " + *userkeyPtr + " " + fileNameStrArray[index] +  " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
+			// fmt.Printf("rm " + fileNameStrArray[index] + " \n")
 
 			// *********************************************************************
 			// Suitable for transfer - now check if hash exists locally >>
@@ -304,6 +304,8 @@ func main() {
 				// download data : 
 				// debug // fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 -D \n")
 
+				
+
 				cmd = exec.Command("cmd.exe", "/C", "raidtool -m "+fileIDArray[index]+" -o "+fileNameStrArray[index]+" -a mars -p 8010 -D")
 
 				_, err = cmd.Output()
@@ -312,12 +314,15 @@ func main() {
 				}
 
 				// transfer data & remove host copy
-				cmd = exec.Command("cmd.exe", "/C", "scp " + fileNameStrArray[index] + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr)
+				
+				cmd = exec.Command("cmd.exe", "/C", "scp -i " + *userkeyPtr + " " + fileNameStrArray[index] +  " " + *usernamePtr + "@" + *storageaddressPtr)
 
 				_, err = cmd.Output()
 				if err != nil {
 					log.Fatal(err)
 				}
+
+				
 
 				// debug //
 				//		fmt.Printf("rm " + fileNameStr + " \n")
@@ -332,7 +337,7 @@ func main() {
 				// *********************************************************************
 				// append hash >>
 				// *********************************************************************
-
+				
 				f, err := os.OpenFile(*raidfilePtr, os.O_APPEND, 0660)
 				if err != nil {
 					panic(err)
