@@ -46,7 +46,7 @@ func main() {
 	raidfilePtr := flag.String("hashlog", "hashlog.txt", "the hashlog")
 	userkeyPtr := flag.String("key", " ", "user ssh key")
 	usernamePtr := flag.String("user", "meduser", "username")
-	storageaddressPtr := flag.String("address", "192.168.2.5:/data/LITwheel/", "storage destination address")
+	storageaddressPtr := flag.String("address", "XXX.XXX.X.X:/target_dir/", "storage destination address")
 	debugTickPtr := flag.Int("debug", 0, "number of debug ticks")
 	flag.Parse()
 
