@@ -232,7 +232,12 @@ func main() {
 	for j := 0; j < raidLoopCounter; j++ {
 		index := raidLoopCounter - j - 1 // number of files = raidLoopCounter
 
+
+
 		if isNotToBeCopiedArray[index] == 0 {  // isNotToBeCopiedArray = all isNotToBeCopied's
+
+			// get header >> turn header into hash >> cross reference hash
+
 			fmt.Printf("raidtool -m " + fileIDArray[index] + " -o " + fileNameStrArray[index] + " -a mars -p 8010 \n")
 			fmt.Printf("scp " + fileNameStrArray[index] + " -i " + *userkeyPtr + " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
 			fmt.Printf("rm " + fileNameStrArray[index] + " \n")

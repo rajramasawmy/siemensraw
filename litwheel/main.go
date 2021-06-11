@@ -1,10 +1,12 @@
 package main
 
-// not highly efficient method to parse raidtool information
-// creates raidtooltmp.txt, raidtool.txt files in the local directory
+// command-line function to send raw Siemens MRI data to a target
+// OVERHEAD: creates raidtooltmp.txt, raidtool.txt, hashlog.txt files in the local directory
+
 import (
 	"encoding/csv"
 	"fmt"
+	"flag"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,28 +18,60 @@ import (
 )
 
 func main() {
-	// command line check >>
-	if len(os.Args) < 2 {
-		fmt.Println("Example usage: \n \n raidtoolsignatures HASHFILE.txt \n" +
-			"\n HASHFILE.txt: REQUIRED - can be an existing list of hashes, or this tool will create a new file with the given name. ")
-		//"\n all : OPTIONAL- will force transfer of all data on the RAID, otherwise will check Performing Physician field for the following format:" +
-		//" \"PERF PHYS NAME, [A-Z]{4,5}[0-9]{4,6}-[A-Z0-9]{4,10} \" (i.e. NHLBI1234-A0001)- where the comma is the separator key")
+	// *********************************************************************
+	// COMMAND LINE HELP
+	// *********************************************************************
+	if len(os.Args) < 5 {
+		fmt.Println("\n ================== \n LITwheel \n ================= \n\n"+
+			"Description: \n A program to run TWIX backups. \n\n" +
+			"Usage: \n litwheel -hashlog=HASHFILE.txt -key=SSH_KEY -user=USER -address=IP_ADDRESS:/PATH -debug=LOOP_NUMBER(default 0)  \n" +
+			"\nREQUIRED: \n" +
+			" HASHFILE.txt - can be an existing list of hashes, or this tool will create a new file with the given name. \n" +
+			" SSH_KEY - key for user stored in local directory \n" +
+			" USER - username to access IP address \n" +
+			" IP_ADDRESS:/PATH - IP address and target path for storage \n" +
+			"\nOPTIONAL: \n" +
+			" LOOP_NUMBER - number of loops to run for debugging")
+		
+		// POTENTIAL ALTERNATIVE USAGE: the PERF PHYS NAME field name can be accessed in anonymized dats, so a key in this field could be used to flag for transfer. 
+		// [A-Z]{4,5}[0-9]{4,6}-[A-Z0-9]{4,10} \" (i.e. NHLBI1234-A0001)")
 		os.Exit(0)
 	}
-	// command line check <<
+
+
+	// *********************************************************************
+	// PARSE COMMAND LINE INPUTS
+	// *********************************************************************
+
+	raidfilePtr := flag.String("hashlog", "hashlog.txt", "the hashlog")
+	userkeyPtr := flag.String("key", " ", "user ssh key")
+	usernamePtr := flag.String("user", "meduser", "username")
+	storageaddressPtr := flag.String("address", "XXX.XXX.X.X:/target_dir/", "storage destination address")
+	debugTickPtr := flag.Int("debug", 0, "number of debug ticks")
+	flag.Parse()
+
+	// debug // 
+	fmt.Println("hashlog:", *raidfilePtr)
+	fmt.Println("user key text file:", *userkeyPtr)
+	fmt.Println("user:", *usernamePtr)
+	fmt.Println("storage address and path:", *storageaddressPtr)
+	fmt.Println("ticks:", *debugTickPtr)
 
 	// check if hash record exists >>
-	_, err := os.Open(os.Args[1])
+	_, err := os.Open(*raidfilePtr)
 	if err != nil {
-		fmt.Printf("This file does not exist, creating %v\n", os.Args[1])
-		_, err = os.Create(os.Args[1])
+		fmt.Printf("This file does not exist, creating %v\n", *raidfilePtr)
+		_, err = os.Create(*raidfilePtr)
 		if err != nil {
 			panic(err)
 		}
 	}
 	// check if hash record exists <<
 
-	// raidtool dump >>
+	// *********************************************************************
+	// READ RAID & DUMP TO FILE
+	// *********************************************************************
+
 	// debug //	fmt.Println("Raidtool dump") // debug //
 	cmd := exec.Command("cmd.exe", "/C", "raidtool -d -a mars -p 8010 > raidtool.txt")
 	// offline debug // cmd := exec.Command("cmd.exe", "/C", "RR_rt_print.exe > rt_temp.txt") // offline debug //
@@ -46,17 +80,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// raidtool dump <<
-
-	// load raidtool dump >>
-	// debug //	fmt.Println("Raidtool read") // debug //
+	
 	rtFile, err2 := ioutil.ReadFile("raidtool.txt")
 	if err2 != nil {
 		log.Fatal(err2)
 	}
-	// load raidtool dump <<
-
-	// raidtool header print >>
+	
+	// *********************************************************************
+	// raidtool header print
+	// *********************************************************************
+	
 	rt_string := string(rtFile[:])
 	idx := strings.Index(rt_string, "FileID")
 	rt_head := rt_string[:idx]
@@ -64,7 +97,6 @@ func main() {
 	numFiles, _ := strconv.Atoi(headSlice[35]) // empirically consistent
 	fileIDs := make([]string, numFiles+20)     // padding to avoid 'panic'
 	fmt.Println("fileID size", len(fileIDs), "rt_head: \n", rt_head)
-	// raidtool header print <<
 
 	// Attempt to find measurement IDs using csv (tab delimiting doesn't quite work)
 	idx = strings.Index(rt_string, "(fileID)")
@@ -72,107 +104,174 @@ func main() {
 	r := csv.NewReader(strings.NewReader(rt_body))
 	r.Comma = '\t' // ? is this reduntant?
 
-	// loop through raidtool dump >>
-	 //debug_tick := 0
+	// *********************************************************************
+	// FIRST LOOP - STASH FILEIDS 
+	// *********************************************************************
+
+	if *debugTickPtr !=0 {
+		fmt.Printf("Limited operation is in effect. Will run %d loops.\n", *debugTickPtr)
+	}
+
+	// FileID arrays and loop-counting vars
+	isNotToBeCopiedArray := make([]int, 0)    
+	fileNameStrArray := make([]string, 0)
+	fileIDArray := make([]string, 0)
+
+	raidLoopCounter := 0 // 
+	
 	for {
-		// debug //		fmt.Println("Reading CSV") // debug //
-/*		debug_tick += 1
-		if debug_tick > 10 {
+
+		// limit how much of the RAID is processed for testing
+		if (raidLoopCounter + 1 > *debugTickPtr) && (*debugTickPtr > 0) {
+
 			break
-		} // limit how much of the RAID is processed for testing
-*/
+		} 
+
+		// Read until end-of-file
 		record, err := r.Read()
 		if err == io.EOF {
 			break
 		}
+		raidLoopCounter += 1
+
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// Parse line
 		reg, err2 := regexp.Compile("[^0-9]+")
 		if err2 != nil {
 			log.Fatal(err2)
 		}
 
-		a := record[0]
-		// debug // fmt.Println(a) // debug //
+		newRaidLine := record[0]
+
 		if len(record[0]) < 100 { // end of file catch
 			break
 		}
 
-		// determine filename & whether file is a retrorecon >>
-		b := strings.SplitAfterN(a, " ", 500) // empirical
+		newRaidLineSplit := strings.SplitAfterN(newRaidLine, " ", 500) // this delimits by spaces, so the next block of code is dealing with this mess..
 
-		c := "a"
-		RRflag := 0
-		e := 0
+		// initialise vars for processing
+		elementStr := "tmpstr"
+		isNotToBeCopied := 0
+		elementNumber := 0
 		i := 0
-		xf := 0
+		protNameFlag := 0
 		fileID := "und" // undefined
 		MeasID := "und"
 		fileNameStr := "und"
 		dateStr := "und"
 		timeStr := "und"
 
-		for e < 9 { // empirical
+		// Parse the TWIX columns we care about:
+		// (FileID | MeasID | ProtName | CreationTime)
+		for elementNumber < 9 {
 
-			c = b[i]
+			elementStr = newRaidLineSplit[i]
 
-			c = strings.Replace(c, " ", "", -1)
+			elementStr = strings.Replace(elementStr, " ", "", -1)
 
-			if len(c) > 0 { // find text
+			if len(elementStr) > 0 {
+				elementNumber += 1
 
-				// debug // fmt.Println(c)
-				e += 1
+				if elementNumber == 1 {
+					// FILE ID
 
-				if e == 1 {
-					fileID = c
-				} else if e == 2 {
-					if len(c) > 5 { // retrorecon jobs have 7-digit FID's, no need to download these duplicates.
+					fileID = elementStr
+
+				} else if elementNumber == 2 {
+					// MEAS ID
+
+					if len(elementStr) > 5 { // retrorecon jobs have 7-digit FID's, no need to download these duplicates.
 						fmt.Println("retrorecon")
-						RRflag = 1
+						isNotToBeCopied = 1
 					} else {
-						MeasID = strings.Repeat("0", 5-len(c)) + c
+						MeasID = strings.Repeat("0", 5-len(elementStr)) + elementStr
 					}
-				} else if e == 3 {
-					fileNameStr = c
-					if len(c) > 2 {
-						if c[0:3] == "Adj" {
-							RRflag = 1 // borrowing retrorecon flag to not copy adjustment scans
+
+				} else if elementNumber == 3 { // this should be tidied
+					// Scan name
+
+					fileNameStr = elementStr
+					if len(elementStr) > 2 {
+						//fmt.Println(elementStr+" strcmp: %d", strings.Compare(elementStr[0:3], "Adj"))
+
+						if elementStr[0:3] == "Adj" {
+							isNotToBeCopied = 1 // borrowing retrorecon flag to not copy adjustment scans
 							fmt.Println("adj")
 						}
 					}
-				} else if e > 3 && e < 7 {
-					// sift through possible spaces in the filename. For simplicity, spaces are replaced with underscores.
-					if c != "xxxxxx" && xf == 0 {
-						e -= 1
-						fileNameStr = fileNameStr + "_" + c
-					} else if c == "xxxxxx" && xf == 0 {
-						xf = 1
+				} else if elementNumber > 3 && elementNumber < 7 { // sift through possible spaces in the filename
+					// Keep grabbing for scan name until we hit patient string
+
+					// currently, xxxxxx for PatName when using anonymized raid
+					if elementStr != "xxxxxx" && protNameFlag == 0 {
+						elementNumber -= 1
+						fileNameStr = fileNameStr + "_" + elementStr
+					} else if elementStr == "xxxxxx" && protNameFlag == 0 {
+					  protNameFlag = 1
 					}
-				} else if e == 8 {
-					// extract date in to YYYYMMDD format
-					date1 := c
+				} else if elementNumber == 8 {
+					// Date string
+
+					date1 := elementStr
 					dateStr = date1[6:10] + date1[3:5] + date1[0:2]
 
-				} else if e == 9 {
-					// extract creation time-stamp and remove colons for saving
-					time1 := c
+				} else if elementNumber == 9 {
+					// Time string
+
+					time1 := elementStr
 					timeStr = reg.ReplaceAllString(time1, "")
+
 				}
+
 			} else {
 			}
 			i += 1
 		}
 
-		// target format: meas_MID00000_FID00000_NAME.dat
-		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + MeasID + "_FID" + strings.Repeat("0", 5-len(fileID)) + fileID + "_" + fileNameStr + ".dat"
-	// determine filename <<
+		// stash everything into arrays (fileID, fileNameStr, copy flag ...)
 
-		if RRflag == 0 {
+		isNotToBeCopiedArray=append(isNotToBeCopiedArray, isNotToBeCopied)
+		fileIDArray=append(fileIDArray,fileID)
+
+		fileNameStr = dateStr + "_" + timeStr + "_" + "meas_" + "MID" + MeasID + "_FID" + strings.Repeat("0", 5-len(fileID)) + fileID + "_" + fileNameStr + ".dat" // get for list making purposes
+
+		fmt.Println(fileNameStr)
+		fileNameStrArray=append(fileNameStrArray, fileNameStr)
+
+
+	} 	// first loop END - through raidtool dump 
+
+	// *********************************************************************
+	// SECOND LOOP - Copy oldest data first 
+	// *********************************************************************
+
+	hashlog, err := ioutil.ReadFile(*raidfilePtr)
+
+	for j := 0; j < raidLoopCounter; j++ {
+		// debug //
+		// fmt.Printf("***************\n")
+
+		// Reverse step through twix to copy oldest data first
+		index := raidLoopCounter - j - 1 // number of files = raidLoopCounter
+
+		if isNotToBeCopiedArray[index] == 0 {  // isNotToBeCopiedArray = all isNotToBeCopied's
+			// // debug //
+			// fmt.Printf("raidtool -m " + fileIDArray[index] + " -o " + fileNameStrArray[index] + " -a mars -p 8010 \n")
+			// fmt.Printf("scp -i " + *userkeyPtr + " " + fileNameStrArray[index] +  " " + *usernamePtr + "@" + *storageaddressPtr + "\n") //change to inputs for target address and key
+			// fmt.Printf("rm " + fileNameStrArray[index] + " \n")
+
+			// *********************************************************************
 			// Suitable for transfer - now check if hash exists locally >>
+			// *********************************************************************
+
+			// Download header for hashing 
+			//	(hdrsignature will work on hdr, dat and dicom (and MRD))
 
 			// debug //fmt.Println("raidtool -h "+fileID+" -o raidtooltmp.txt -a mars -p 8010") // offline debug //
-			cmd := exec.Command("cmd.exe", "/C", "raidtool -h "+fileID+" -o raidtooltmp.txt -a mars -p 8010")
+			cmd := exec.Command("cmd.exe", "/C", "raidtool -h "+fileIDArray[index]+" -o raidtooltmp.txt -a mars -p 8010")
 			_, err = cmd.Output()
 			if err != nil {
 				log.Fatal(err)
@@ -183,26 +282,31 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			// offline debug // fmt.Println("cmd.exe", "/C", "hdrsignature raidtooltmp.txt") // offline debug //
 
 			hdrHash := string(stdout[:])
 
 			// check if hash exists >>
 
-			read, err := ioutil.ReadFile(os.Args[1])
-			if strings.Contains(string(read), hdrHash) {
-				// debug //
-				fmt.Println("file ID " + fileID + " : Hash exists, no need to transfer") // debug //
+			if strings.Contains(string(hashlog), hdrHash) {
+				// Already copied
+
+				fmt.Println("file ID " + fileIDArray[index] + " : Hash exists, no need to transfer") // debug //
 
 			} else {
+				// Needs to be copied
 
-				fmt.Println("file ID " + fileID + " : No hash, transferring and appending to log. ***")
+				fmt.Println("file ID " + fileIDArray[index] + " : No hash, transferring and appending to log. ***")
+
+				// *********************************************************************
 				// @ LIT wheel - Data transfer >>
+				// *********************************************************************
 
-				// download data : -D > dependent measurements
+				// download data : 
 				// debug // fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 -D \n")
 
-				cmd = exec.Command("cmd.exe", "/C", "raidtool -m "+fileID+" -o "+fileNameStr+" -a mars -p 8010 -D")
+				
+
+				cmd = exec.Command("cmd.exe", "/C", "raidtool -m "+fileIDArray[index]+" -o "+fileNameStrArray[index]+" -a mars -p 8010 -D")
 
 				_, err = cmd.Output()
 				if err != nil {
@@ -210,17 +314,19 @@ func main() {
 				}
 
 				// transfer data & remove host copy
-				// debug // fmt.Printf("scp " + fileNameStr + " user@host:/folder/ \n")
-				cmd = exec.Command("cmd.exe", "/C", "scp "+fileNameStr+" user@host:/folder/")
+				
+				cmd = exec.Command("cmd.exe", "/C", "scp -i " + *userkeyPtr + " " + fileNameStrArray[index] +  " " + *usernamePtr + "@" + *storageaddressPtr)
 
 				_, err = cmd.Output()
 				if err != nil {
 					log.Fatal(err)
 				}
 
+				
+
 				// debug //
 				//		fmt.Printf("rm " + fileNameStr + " \n")
-				cmd = exec.Command("cmd.exe", "/C", "rm "+fileNameStr)
+				cmd = exec.Command("cmd.exe", "/C", "rm "+fileNameStrArray[index])
 
 				_, err = cmd.Output()
 				if err != nil {
@@ -228,9 +334,11 @@ func main() {
 				}
 				// @ LIT wheel - Data transfer <<
 
+				// *********************************************************************
 				// append hash >>
-
-				f, err := os.OpenFile(os.Args[1], os.O_APPEND, 0660)
+				// *********************************************************************
+				
+				f, err := os.OpenFile(*raidfilePtr, os.O_APPEND, 0660)
 				if err != nil {
 					panic(err)
 				}
@@ -246,7 +354,9 @@ func main() {
 				// append hash <<
 
 			} // check if hash exists <<
-		}
-	} // loop through raidtool dump <<
+
+		} // if @ isNotToBeCopiedArray
+
+	} // j @ raidLoopCounter
 
 }
