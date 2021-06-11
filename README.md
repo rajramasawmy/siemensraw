@@ -70,7 +70,17 @@ scp -i <user_ssh_key> raidtool.txt <user_name_for_server>@<server_ip_address>:<l
 ssh -i <user_ssh_key> <user_name_for_server>@<server_ip_address> "sh send_raidlog.sh"
 ```
 
-__send_raidlog.sh__ Extra fudge script because of some permission errors..
+__send_raidlog.sh__ Extra fudge script because of some permission errors (using docker)..
 ```
+docker exec -i <myContainer> bash <<EOF
 
+  cd /opt/data/<wherever you sent the raidtool.txt>
+
+  chmod 777 raidtool.txt 
+  
+  exit
+
+EOF
+
+cat <docker mount dir>/raidtool.txt | mail -s 'RAID report' person1@mail, person2@mail, person3@mail
 ```
