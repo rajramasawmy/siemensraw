@@ -1,7 +1,24 @@
 package main
 
-// command-line function to send raw Siemens MRI data to a target
-// OVERHEAD: creates raidtooltmp.txt, raidtool.txt, hashlog.txt files in the local directory
+// command-line function to send raw Siemens MRI data to a target directory
+// Steps:
+// 	- Query RAID for files and pipe to local file (can be used for logging)
+// 	- Run through File IDs and determine filetype (meas,adj,retrorecon)
+// 	- stash files to-be-copied in an array
+// 	- Run through the data (from oldest to newest) and hash the header
+// 	- if hash exists in local reference file, data has already been copied
+//	- data will be copied using scp and ssh keys
+// Notes:
+// 	- OVERHEAD: creates raidtooltmp.txt, raidtool.txt files in the local directory
+// 	- OVERHEAD/TODO: Hashlog file will currently continue to grow
+// 	- OVERHEAD/TODO: Files will not be sorted at target, it will just be one giant folder unless you tidy it up.
+//  - DEPENDENCY: Requires hdrsignature compiled and in the same directory as litwheel. 
+// 	- BEHAVIOUR: Retro-recon and "Adj" scans will not be copied in this version.
+// Usage:
+// 	Standard call:
+// 	- litwheel -user=<username> -key=<sshkey> -address=<storage_ip:storage_dir> 
+// 	Debugging a stored RAID file:
+// 	- litwheel -file=<RAIDfile> -debug=<NUM_steps> -user=<username> -key=<sshkey> -address=<storage_ip:storage_dir> 
 
 import (
 	"encoding/csv"
@@ -166,6 +183,10 @@ func main() {
 
 		// Parse the TWIX columns we care about:
 		// (FileID | MeasID | ProtName | CreationTime)
+		// Assuming this RAID layout (VE11A & C tested)
+		// FileID     MeasID   	ProtName	PatName   Status    Size   	SizeOnDisk  CreationTime          CloseTime 			dependent files (fileID)
+		// 11223      456   	gre			xxxxxx    cld       787776 	4194304   	14.03.2018 11:51:00   14.03.2018 11:51:03	11220
+		
 		for elementNumber < 9 {
 
 			elementStr = newRaidLineSplit[i]
@@ -203,9 +224,10 @@ func main() {
 						}
 					}
 				} else if elementNumber > 3 && elementNumber < 7 { // sift through possible spaces in the filename
-					// Keep grabbing for scan name until we hit patient string
+					// Scan name (cont) 
+					// Currently, xxxxxx for PatName when using anonymized raid
+					// use this to identify end-of-file-name
 
-					// currently, xxxxxx for PatName when using anonymized raid
 					if elementStr != "xxxxxx" && protNameFlag == 0 {
 						elementNumber -= 1
 						fileNameStr = fileNameStr + "_" + elementStr
@@ -304,8 +326,6 @@ func main() {
 				// download data : 
 				// debug // fmt.Printf("raidtool -m " + fileID + " -o " + fileNameStr + " -a mars -p 8010 -D \n")
 
-				
-
 				cmd = exec.Command("cmd.exe", "/C", "raidtool -m "+fileIDArray[index]+" -o "+fileNameStrArray[index]+" -a mars -p 8010 -D")
 
 				_, err = cmd.Output()
@@ -321,8 +341,6 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-
-				
 
 				// debug //
 				//		fmt.Printf("rm " + fileNameStr + " \n")
